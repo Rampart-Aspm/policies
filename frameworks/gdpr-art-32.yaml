@@ -1,0 +1,25 @@
+key: gdpr
+id: gdpr-art-32
+scope: gdpr
+displayName: "GDPR: Article 32, security of processing, with Article 25"
+version: "Regulation (EU) 2016/679"
+source: "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+description: "The technical and organisational measures of Article 32 that software scanning can speak to, and data protection by design."
+note: "An approximation. Article 32 is risk-based and names measures as examples, so no scan proves compliance; this shows the evidence a regulator may ask for. Ids: Art32.1.a is Article 32(1)(a)."
+evidenceWindowDays: 30
+verification:
+  level: primary
+  how: "Article 32(1)(a) to (d) and Article 25 were read in the official text of the Regulation on EUR-Lex (CELEX 32016R0679)."
+licence: "EU law, which may be reproduced. The published wording is shortened in the control names."
+decisions:
+  - "Article 32 asks for measures 'appropriate to the risk' and gives four as examples; only (a) pseudonymisation and encryption, and (d) regular testing, have anything a scanner can see. (b) and (c) concern resilience and restoration, and Article 25 concerns design, so they are manual."
+  - "Article 32(1)(d) reads as: tested lately, and nothing critical left open, a deliberate and weaker reading."
+limits:
+  - "The Regulation names no weakness. The weakness list for (a) is ours (METHOD.md)."
+  - "Most of the Regulation (principles, rights, transfers, breach notification) is not about software findings and is not listed."
+controls:
+  - {id: Art32.1.a, name: "Pseudonymisation and encryption of personal data", cwes: [311, 312, 319, 327], why: "Missing encryption, cleartext storage and transmission, and broken algorithms are the weaknesses that leave personal data unprotected."}
+  - {id: Art32.1.b, name: "Ongoing confidentiality, integrity, availability and resilience of processing systems and services", manual: true, why: "Resilience is an operational property."}
+  - {id: Art32.1.c, name: "Ability to restore availability and access to personal data in a timely manner after an incident", manual: true, why: "Restoration is tested by exercises, not scans."}
+  - {id: Art32.1.d, name: "A process for regularly testing, assessing and evaluating the effectiveness of the measures", categories: [sca, container, sast, dast], minSeverity: critical, evidence: [sca, container, sast, dast], description: "Read as: tested lately, and nothing critical left open.", why: "A recent scan evidences regular testing; the severity floor stops the control failing on every finding the testing exists to find."}
+  - {id: Art25, name: "Data protection by design and by default", manual: true, why: "Design decisions are made by people."}

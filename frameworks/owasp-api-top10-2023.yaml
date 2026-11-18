@@ -1,0 +1,30 @@
+key: owaspapi
+id: owasp-api-top10-2023
+scope: owasp-api
+displayName: "OWASP API Security Top 10 2023"
+version: "2023"
+source: "https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
+description: "The ten most critical API security risks of 2023, each matched to the weaknesses OWASP itself lists for it."
+note: "API6 lists no weakness in OWASP's own text, so it is manual. CWE-2, CWE-16 and CWE-388, which OWASP lists for API8, are groupings in MITRE's catalogue (CWE-16 is obsolete) that scanners rarely report."
+evidenceWindowDays: 30
+verification:
+  level: primary
+  how: "The titles and the weakness references were read from the pages of the OWASP API Security project itself (github.com/OWASP/API-Security, edition 2023, one page per risk); the weakness names are MITRE's. The mapping is OWASP's, not ours."
+licence: "OWASP's content is published under a Creative Commons Attribution-ShareAlike licence. The titles are used with attribution to the OWASP API Security Project."
+decisions:
+  - "Unlike the other frameworks, the weakness lists here are not our approximation: they are the references OWASP publishes on each risk's page, in the order OWASP gives them, and nothing was added or removed except as the note says."
+  - "A weakness-only control is evidenced by a code scan (`sast` or `dast`), the server's rule; for APIs a dynamic scan is the usual evidence."
+limits:
+  - "API6 (sensitive business flows) is about abuse of legitimate functionality, which no scanner reads; OWASP lists no weakness for it."
+  - "CWE-2, CWE-16 and CWE-388 are groupings, not weaknesses; a scanner that reports them is rare, so API8 is mostly read through the other weaknesses it lists."
+controls:
+  - {id: "API1:2023", name: "Broken Object Level Authorization", cwes: [285, 639], why: "OWASP's references for this risk: CWE-285 and CWE-639."}
+  - {id: "API2:2023", name: "Broken Authentication", cwes: [204, 307], why: "OWASP's references for this risk: CWE-204 and CWE-307."}
+  - {id: "API3:2023", name: "Broken Object Property Level Authorization", cwes: [213, 915], why: "OWASP's references for this risk: CWE-213 and CWE-915."}
+  - {id: "API4:2023", name: "Unrestricted Resource Consumption", cwes: [400, 770, 799], why: "OWASP's references for this risk: CWE-400, CWE-770 and CWE-799."}
+  - {id: "API5:2023", name: "Broken Function Level Authorization", cwes: [285], why: "OWASP's reference for this risk: CWE-285."}
+  - {id: "API6:2023", name: "Unrestricted Access to Sensitive Business Flows", manual: true, why: "OWASP lists no weakness for this risk; it is abuse of legitimate functionality."}
+  - {id: "API7:2023", name: "Server Side Request Forgery", cwes: [918], why: "OWASP's reference for this risk: CWE-918."}
+  - {id: "API8:2023", name: "Security Misconfiguration", cwes: [16, 2, 209, 319, 388, 444, 942], why: "OWASP's references for this risk: CWE-16, CWE-2, CWE-209, CWE-319, CWE-388, CWE-444 and CWE-942."}
+  - {id: "API9:2023", name: "Improper Inventory Management", cwes: [1059], why: "OWASP's reference for this risk: CWE-1059."}
+  - {id: "API10:2023", name: "Unsafe Consumption of APIs", cwes: [20, 200, 319], why: "OWASP's references for this risk: CWE-20, CWE-200 and CWE-319."}

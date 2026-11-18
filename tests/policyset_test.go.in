@@ -1,0 +1,285 @@
+// This file is copied into a Rampart checkout by scripts/check.sh and run there, because it uses Rampart's internal
+// packages. It is not part of any Go module of this repository (hence the .in suffix).
+package apply_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"os"
+	"strings"
+	"testing"
+	"time"
+
+	"gopkg.in/yaml.v3"
+
+	"rampart/internal/config/apply"
+	"rampart/internal/domain"
+	"rampart/internal/risk"
+)
+
+func policySetSpec(t *testing.T, raw []byte, kind string) []byte {
+	t.Helper()
+	for _, d := range strings.Split(string(raw), "\n---") {
+		var x struct {
+			Kind string         `yaml:"kind"`
+			Spec map[string]any `yaml:"spec"`
+		}
+		if yaml.Unmarshal([]byte(d), &x) == nil && x.Kind == kind {
+			b, _ := json.Marshal(x.Spec)
+			return b
+		}
+	}
+	t.Fatalf("no %s in the render", kind)
+	return nil
+}
+
+func renderDir(t *testing.T) string {
+	t.Helper()
+	dir := os.Getenv("POLICYSET_RENDER")
+	if dir == "" {
+		t.Skip("POLICYSET_RENDER is not set: run scripts/check.sh")
+	}
+	return dir
+}
+
+// Every document of both scopes is accepted by the server's own apply code.
+func TestPolicySetIsAccepted(t *testing.T) {
+	dir := renderDir(t)
+	for _, f := range []string{"cluster.yaml", "namespace.yaml", "plain.yaml"} {
+		raw, err := os.ReadFile(dir + "/" + f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := apply.NewApplier(apply.NewMemoryConfigStore()).ApplyMultiDocument(context.Background(), raw); err != nil {
+			t.Errorf("%s: the server refuses the policy set: %v", f, err)
+		}
+	}
+}
+
+// The risk policy is the built-in one, factor for factor. If Rampart changes its built-in policy this fails, so that the
+// change is a decision about this chart (and a new version of it), not a silent difference.
+func TestPolicySetRiskPolicyIsTheBuiltinOne(t *testing.T) {
+	raw, _ := os.ReadFile(renderDir(t) + "/cluster.yaml")
+	var mine risk.RiskPolicySpec
+	if err := json.Unmarshal(policySetSpec(t, raw, "ClusterRiskPolicy"), &mine); err != nil {
+		t.Fatal(err)
+	}
+	b := risk.BuiltinSpec()
+	if len(mine.Factors) != len(b.Factors) {
+		t.Fatalf("the chart has %d factors, the built-in policy %d", len(mine.Factors), len(b.Factors))
+	}
+	for i, f := range b.Factors {
+		if mine.Factors[i] != f {
+			t.Errorf("factor %d differs:\n chart    %+v\n built-in %+v", i, mine.Factors[i], f)
+		}
+	}
+	for k, v := range b.Base {
+		if mine.Base[k] != v {
+			t.Errorf("base.%s is %d, the built-in policy has %d", k, mine.Base[k], v)
+		}
+	}
+	for k, v := range b.Bands {
+		if mine.Bands[k] != v {
+			t.Errorf("bands.%s is %d, the built-in policy has %d", k, mine.Bands[k], v)
+		}
+	}
+}
+
+// Each SLA profile: the server gives every cell the number written in the matrix (maxDays must not cap a cell, which would
+// shorten a deadline without a word), the rampart profile is the built-in policy, and the strictest profile is, cell by cell, the
+// smallest number of the other four, so it can never be looser than any of them.
+func TestPolicySetSLAProfiles(t *testing.T) {
+	dir := renderDir(t)
+	parsed := map[string]domain.SLAPolicy{}
+	for _, prof := range []string{"rampart", "pci-dss", "fedramp", "cisa-bod", "strictest"} {
+		raw, err := os.ReadFile(dir + "/sla-" + prof + ".yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		p, err := domain.ParseSLAPolicySpec(policySetSpec(t, raw, "ClusterSLAPolicy"))
+		if err != nil {
+			t.Fatalf("%s: %v", prof, err)
+		}
+		parsed[prof] = p
+		for band, row := range p.Matrix {
+			for crit, days := range row {
+				if got := p.Days(domain.Severity(band), crit); got != days {
+					t.Errorf("%s: %s/%s is %d in the matrix but %d after maxDays", prof, band, crit, days, got)
+				}
+			}
+		}
+	}
+	d := domain.DefaultSLAPolicy()
+	r := parsed["rampart"]
+	for band, row := range d.Matrix {
+		for crit, days := range row {
+			if r.Matrix[band][crit] != days {
+				t.Errorf("rampart %s/%s is %d, the built-in policy has %d", band, crit, r.Matrix[band][crit], days)
+			}
+		}
+	}
+	if r.MaxDays != d.MaxDays || r.KEVDueDate != d.KEVDueDate || r.StartFrom != d.StartFrom {
+		t.Errorf("the rampart profile caps differ from the built-in policy: %+v vs %+v", r, d)
+	}
+	st := parsed["strictest"]
+	for band, row := range st.Matrix {
+		for crit, days := range row {
+			want := days
+			for _, other := range []string{"rampart", "pci-dss", "fedramp", "cisa-bod"} {
+				if v := parsed[other].Matrix[band][crit]; v < want {
+					t.Errorf("strictest %s/%s is %d but %s gives %d: it must be the smallest of the others", band, crit, days, other, v)
+				}
+			}
+			smallest := parsed["rampart"].Matrix[band][crit]
+			for _, other := range []string{"pci-dss", "fedramp", "cisa-bod"} {
+				if v := parsed[other].Matrix[band][crit]; v < smallest {
+					smallest = v
+				}
+			}
+			if days != smallest {
+				t.Errorf("strictest %s/%s is %d, the smallest of the others is %d", band, crit, days, smallest)
+			}
+		}
+	}
+	if !st.KEVDueDate {
+		t.Error("strictest must keep the CISA due date cap")
+	}
+}
+
+type scenarioFile struct {
+	FirstSeen string `yaml:"firstSeen"`
+	Scenarios []struct {
+		ID      string `yaml:"id"`
+		Title   string `yaml:"title"`
+		Story   string `yaml:"story"`
+		KEVDue  string `yaml:"kevDue"`
+		Finding struct {
+			Severity       string `yaml:"severity"`
+			Category       string `yaml:"category"`
+			Track          string `yaml:"track"`
+			SecretVerified bool   `yaml:"secret_verified"`
+		} `yaml:"finding"`
+		Vuln struct {
+			KEV             bool    `yaml:"kev"`
+			EPSS            float64 `yaml:"epss"`
+			Exploited       bool    `yaml:"exploited"`
+			ExploitMaturity string  `yaml:"exploit_maturity"`
+		} `yaml:"vuln"`
+		App struct {
+			Criticality          string   `yaml:"criticality"`
+			InternetFacing       bool     `yaml:"internet_facing"`
+			DataClassification   []string `yaml:"data_classification"`
+			CompensatingControls []string `yaml:"compensating_controls"`
+		} `yaml:"app"`
+	} `yaml:"scenarios"`
+}
+
+// The worked examples of docs/scenarios.yaml are evaluated by the server's own scoring and SLA code, with the policies of
+// the rendered chart, and compared with docs/scenarios.golden.json, from which SCORING.md and SLA.md are generated. A change
+// in the engine, in a policy or in an example that moves a number fails here, so the documents cannot state a wrong one.
+// POLICYSET_UPDATE=1 rewrites the golden file.
+func TestPolicySetScenarios(t *testing.T) {
+	dir := renderDir(t)
+	scenPath, goldenPath := os.Getenv("POLICYSET_SCENARIOS"), os.Getenv("POLICYSET_GOLDEN")
+	if scenPath == "" || goldenPath == "" {
+		t.Skip("POLICYSET_SCENARIOS and POLICYSET_GOLDEN are not set: run scripts/check.sh")
+	}
+	raw, err := os.ReadFile(scenPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sf scenarioFile
+	if err := yaml.Unmarshal(raw, &sf); err != nil {
+		t.Fatal(err)
+	}
+	firstSeen, err := time.Parse(time.RFC3339, sf.FirstSeen)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cluster, _ := os.ReadFile(dir + "/cluster.yaml")
+	riskSpec := policySetSpec(t, cluster, "ClusterRiskPolicy")
+	pol, err := risk.ParseRiskPolicySpec(riskSpec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var spec risk.RiskPolicySpec
+	if err := json.Unmarshal(riskSpec, &spec); err != nil {
+		t.Fatal(err)
+	}
+
+	profiles := []string{"rampart", "pci-dss", "fedramp", "cisa-bod", "strictest"}
+	sla := map[string]domain.SLAPolicy{}
+	slaOut := map[string]any{}
+	for _, prof := range profiles {
+		b, _ := os.ReadFile(dir + "/sla-" + prof + ".yaml")
+		p, err := domain.ParseSLAPolicySpec(policySetSpec(t, b, "ClusterSLAPolicy"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sla[prof] = p
+		slaOut[prof] = map[string]any{"matrix": p.Matrix, "maxDays": p.MaxDays, "kevDueDate": p.KEVDueDate, "startFrom": p.StartFrom}
+	}
+
+	var results []map[string]any
+	for _, sc := range sf.Scenarios {
+		in := risk.Input{
+			Finding: risk.FindingInput{Severity: sc.Finding.Severity, Category: sc.Finding.Category, Track: sc.Finding.Track, SecretVerified: sc.Finding.SecretVerified},
+			Vuln:    risk.VulnInput{ID: "CVE-0000-0000", KEV: sc.Vuln.KEV, EPSS: sc.Vuln.EPSS, Exploited: sc.Vuln.Exploited, ExploitMaturity: sc.Vuln.ExploitMaturity},
+			App:     risk.AppInput{Criticality: sc.App.Criticality, InternetFacing: sc.App.InternetFacing, DataClassification: sc.App.DataClassification, CompensatingControls: sc.App.CompensatingControls},
+		}
+		b := pol.Evaluate(in)
+		if len(b.Errors) > 0 {
+			t.Errorf("%s: a factor failed to evaluate: %v", sc.ID, b.Errors)
+		}
+		days := map[string]int{}
+		for _, prof := range profiles {
+			days[prof] = sla[prof].Days(b.Band, sc.App.Criticality)
+		}
+		var kev *time.Time
+		if sc.KEVDue != "" {
+			d, err := time.Parse("2006-01-02", sc.KEVDue)
+			if err != nil {
+				t.Fatal(err)
+			}
+			kev = &d
+		}
+		due := sla["rampart"].Due(b.Band, sc.App.Criticality, firstSeen, kev)
+		plain := firstSeen.Add(time.Duration(days["rampart"]) * 24 * time.Hour)
+		factors := []map[string]any{}
+		for _, f := range b.Factors {
+			factors = append(factors, map[string]any{"name": f.Name, "points": f.Points})
+		}
+		res := map[string]any{
+			"id": sc.ID, "title": sc.Title, "story": sc.Story,
+			"input": map[string]any{"finding": sc.Finding, "vuln": sc.Vuln, "app": sc.App, "kevDue": sc.KEVDue},
+			"base": b.BasePoints, "factors": factors, "score": b.TotalScore, "band": string(b.Band),
+			"days": days, "due": due.Format(time.RFC3339), "dueWithoutCap": plain.Format(time.RFC3339), "cappedByKEV": !due.Equal(plain),
+		}
+		results = append(results, res)
+	}
+	policyOut := map[string]any{"base": spec.Base, "bands": spec.Bands, "factors": spec.Factors}
+	golden := map[string]any{"firstSeen": sf.FirstSeen, "policy": policyOut, "slaProfiles": slaOut, "scenarios": results}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(golden); err != nil {
+		t.Fatal(err)
+	}
+	if os.Getenv("POLICYSET_UPDATE") == "1" {
+		if err := os.WriteFile(goldenPath, buf.Bytes(), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("wrote %s", goldenPath)
+		return
+	}
+	want, err := os.ReadFile(goldenPath)
+	if err != nil {
+		t.Fatalf("no golden file: run UPDATE_GOLDEN=1 scripts/check.sh: %v", err)
+	}
+	if !bytes.Equal(want, buf.Bytes()) {
+		t.Fatalf("the results differ from docs/scenarios.golden.json: the engine, a policy or an example changed. Review the difference, then run UPDATE_GOLDEN=1 scripts/check.sh and scripts/generate.py")
+	}
+}

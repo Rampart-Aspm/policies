@@ -1,0 +1,80 @@
+{{- /*
+  The scoring formula, written out so it is reviewed in Git. The numbers are Rampart's own judgement and are the same
+  as the built-in policy (README.md says what each rests on). A policy that lists "factors" REPLACES the built-in
+  list, so all twelve are written. It is named "default", the name the server reads first.
+*/ -}}
+{{- if .Values.riskPolicy.enabled }}
+apiVersion: rampart.aspm.dev/v1alpha1
+kind: {{ include "rampart-policies.kind" (dict "ctx" . "kind" "RiskPolicy") }}
+metadata:
+  {{- include "rampart-policies.meta" (dict "ctx" . "name" "default") | nindent 2 }}
+spec:
+  # score = clamp(base[severity] + sum of the points of the factors that apply, 0..1000)
+  base: {critical: 600, high: 400, medium: 200, low: 80, info: 10}
+  # lower bounds; "low" is everything under medium
+  bands: {critical: 800, high: 600, medium: 300}
+  factors:
+    # threat: what is known about the vulnerability in the world
+    - name: KEV
+      when: "vuln.kev"
+      points: 300
+      group: threat
+      reason: "Vulnerability listed in CISA Known Exploited Vulnerabilities catalog"
+    - name: EPSS_HIGH
+      when: "vuln.epss >= 0.5"
+      points: 150
+      group: threat
+      reason: "EPSS exploitation probability is >= 50%"
+    - name: EPSS_MODERATE
+      when: "vuln.epss >= 0.1 && vuln.epss < 0.5"
+      points: 60
+      group: threat
+      reason: "EPSS exploitation probability is >= 10%"
+    - name: EXPLOITED_REPORTED
+      when: "vuln.exploited && !vuln.kev"
+      points: 300
+      group: threat
+      reason: "Exploitation in the wild reported by a configured intelligence source (not in CISA KEV)"
+    - name: EXPLOIT_WEAPONIZED
+      when: 'vuln.exploit_maturity == "weaponized"'
+      points: 120
+      group: threat
+      reason: "A weaponized public exploit exists (a Metasploit module or a configured source)"
+    - name: SECRET_VERIFIED
+      when: "finding.secret_verified"
+      points: 250
+      group: threat
+      reason: "Secret credential verified live against upstream provider"
+    # context: what the application says about itself
+    - name: INTERNET_FACING
+      when: "app.internet_facing"
+      points: 100
+      group: context
+      reason: "Asset or application is internet-facing"
+    - name: SENSITIVE_DATA
+      when: 'app.data_classification.exists(d, d in ["pci", "pii", "phi"])'
+      points: 80
+      group: context
+      reason: "Application handles sensitive data (PCI, PII, or PHI)"
+    - name: APP_CRITICAL
+      when: 'app.criticality == "critical"'
+      points: 100
+      group: context
+      reason: "Application business criticality is rated Critical"
+    - name: APP_HIGH
+      when: 'app.criticality == "high"'
+      points: 50
+      group: context
+      reason: "Application business criticality is rated High"
+    - name: PRODUCTION_ENV
+      when: 'finding.track in ["production", "prod"]'
+      points: 60
+      group: context
+      reason: "Finding detected in production environment"
+    # reduction: what lowers the exposure
+    - name: COMPENSATING_CONTROL
+      when: 'finding.category == "dast" && app.compensating_controls.exists(c, c in ["waf", "api_gateway"])'
+      points: -80
+      group: reduction
+      reason: "The application is behind a web application firewall or an API gateway, which inspects the HTTP requests this finding needs"
+{{- end }}

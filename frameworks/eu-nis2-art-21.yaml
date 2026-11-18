@@ -1,0 +1,30 @@
+key: nis2
+id: eu-nis2-art-21
+scope: eu-nis2
+displayName: "EU NIS2 Directive: Article 21, cybersecurity risk-management measures"
+version: "Directive (EU) 2022/2555"
+source: "https://eur-lex.europa.eu/eli/dir/2022/2555/oj"
+description: "The ten minimum measures of Article 21(2) that essential and important entities must take, with the ones software scanning can speak to matched."
+note: "An approximation. The Directive is transposed into national law, so national requirements may add to these. Ids: 21.2.e is Article 21(2), point (e)."
+evidenceWindowDays: 30
+verification:
+  level: primary
+  how: "Article 21(2), points (a) to (j), was read in the official text of the Directive on EUR-Lex (CELEX 32022L2555)."
+licence: "EU law, which may be reproduced. The published wording is shortened in the control names."
+decisions:
+  - "All ten points are listed, because Article 21(2) is a short list that an entity has to answer in full; only (e), (f) and (h) have anything a scanner can see."
+  - "(e) is the one that names vulnerability handling and secure development: it reads open high or critical findings. (f) reads as: tested lately, and nothing critical left open, a deliberate and weaker reading. (h) reads the weakness classes of cryptography itself."
+limits:
+  - "The Directive names no weakness; the weakness list for (h) is ours (METHOD.md)."
+  - "Reporting obligations (Article 23) and supervision are not listed."
+controls:
+  - {id: 21.2.a, name: "Policies on risk analysis and information system security", manual: true, why: "Policies are documents."}
+  - {id: 21.2.b, name: "Incident handling", manual: true, why: "Incident handling is a process."}
+  - {id: 21.2.c, name: "Business continuity, such as backup management and disaster recovery, and crisis management", manual: true, why: "Continuity is an operational capability."}
+  - {id: 21.2.d, name: "Supply chain security, including relationships with direct suppliers and service providers", manual: true, description: "Evidence: an SBOM is uploaded for every application.", why: "Supplier relationships are contractual; an SBOM is the technical evidence of what a supplier's components are."}
+  - {id: 21.2.e, name: "Security in network and information systems acquisition, development and maintenance, including vulnerability handling and disclosure", categories: [sca, container, sast, dast], minSeverity: high, evidence: [sca, container, sast, dast], why: "Open high or critical findings are vulnerabilities not yet handled; recent scans evidence that they are looked for."}
+  - {id: 21.2.f, name: "Policies and procedures to assess the effectiveness of cybersecurity risk-management measures", categories: [sca, container, sast, dast], minSeverity: critical, evidence: [sca, container, sast, dast], description: "Read as: tested lately, and nothing critical left open.", why: "A recent scan evidences that effectiveness is assessed; the severity floor stops the control failing on every finding the assessment exists to find."}
+  - {id: 21.2.g, name: "Basic cyber hygiene practices and cybersecurity training", manual: true, why: "Training is an organisational record."}
+  - {id: 21.2.h, name: "Policies and procedures regarding the use of cryptography and, where appropriate, encryption", cwes: [326, 327, 328, 330, 759, 916], why: "The weaknesses of cryptography itself: weak strength, broken algorithms, weak hashes, poor randomness, weak password hashing."}
+  - {id: 21.2.i, name: "Human resources security, access control policies and asset management", manual: true, why: "Mostly people and policy."}
+  - {id: 21.2.j, name: "Multi-factor or continuous authentication, secured communications and secured emergency communication", manual: true, why: "An authentication scheme is a deployment fact."}

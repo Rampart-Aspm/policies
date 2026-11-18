@@ -1,0 +1,63 @@
+{{- /*
+  How long a finding may stay open. One policy is in force, so ONE profile is rendered, chosen by slaPolicy.profile.
+  Rows are the band of the score, columns the criticality of the application; the standards-based profiles use the
+  same days in every column because the standards do not look at criticality. maxDays is never below the largest day
+  count of the matrix: the server caps every deadline at maxDays, so a lower cap would silently shorten the rows above.
+*/ -}}
+{{- if .Values.slaPolicy.enabled }}
+{{- $profile := .Values.slaPolicy.profile | default "strictest" }}
+{{- if not (has $profile (list "strictest" "rampart" "pci-dss" "fedramp" "cisa-bod")) }}
+{{- fail (printf "slaPolicy.profile must be strictest, rampart, pci-dss, fedramp or cisa-bod, got %q" $profile) }}
+{{- end }}
+apiVersion: rampart.aspm.dev/v1alpha1
+kind: {{ include "rampart-policies.kind" (dict "ctx" . "kind" "SLAPolicy") }}
+metadata:
+  {{- include "rampart-policies.meta" (dict "ctx" . "name" "default" "extra" (dict "rampart.aspm.dev/sla-profile" $profile)) | nindent 2 }}
+spec:
+  matrix:
+{{- if eq $profile "strictest" }}
+    # The strictest of the four profiles: every cell is the smallest number of the rampart, pci-dss, fedramp and cisa-bod profiles, so a
+    # finding that meets this deadline meets all four. It differs from rampart only for low-criticality applications. CI checks it
+    # cell by cell (tests/policyset_test.go.in), so it cannot fall behind when another profile changes.
+    critical: {critical: 3, high: 7, medium: 14, low: 15}
+    high:     {critical: 7, high: 14, medium: 30, low: 30}
+    medium:   {critical: 30, high: 45, medium: 90, low: 90}
+    low:      {critical: 90, high: 120, medium: 180, low: 180}
+  caps: {kevDueDate: true, maxDays: 180}
+{{- else if eq $profile "rampart" }}
+    # Rampart's own matrix (the built-in one): tighter than every standard below, and it uses the criticality.
+    critical: {critical: 3, high: 7, medium: 14, low: 30}
+    high:     {critical: 7, high: 14, medium: 30, low: 60}
+    medium:   {critical: 30, high: 45, medium: 90, low: 120}
+    low:      {critical: 90, high: 120, medium: 180, low: 365}
+  caps: {kevDueDate: true, maxDays: 365}
+{{- else if eq $profile "pci-dss" }}
+    # PCI DSS 4.0.1 requirement 6.3.3: critical (and, in some readings, high) patches within one month of the
+    # patch's release. Medium and low are not set by the standard (the entity sets them from its own risk analysis);
+    # 90 and 180 days are Rampart's choice. The standard counts from the patch release, Rampart from first seen.
+    critical: {critical: 30, high: 30, medium: 30, low: 30}
+    high:     {critical: 30, high: 30, medium: 30, low: 30}
+    medium:   {critical: 90, high: 90, medium: 90, low: 90}
+    low:      {critical: 180, high: 180, medium: 180, low: 180}
+  caps: {kevDueDate: true, maxDays: 180}
+{{- else if eq $profile "fedramp" }}
+    # FedRAMP continuous monitoring (the legacy schedule): critical and high within 30 days of discovery, moderate
+    # 90, low 180. A CISA KEV due date comes first (kevDueDate).
+    critical: {critical: 30, high: 30, medium: 30, low: 30}
+    high:     {critical: 30, high: 30, medium: 30, low: 30}
+    medium:   {critical: 90, high: 90, medium: 90, low: 90}
+    low:      {critical: 180, high: 180, medium: 180, low: 180}
+  caps: {kevDueDate: true, maxDays: 180}
+{{- else if eq $profile "cisa-bod" }}
+    # CISA BOD 19-02 (internet-accessible systems): critical within 15 days and high within 30, counted from the
+    # first detection. Medium and low are not in the directive; 90 and 180 days are Rampart's choice.
+    critical: {critical: 15, high: 15, medium: 15, low: 15}
+    high:     {critical: 30, high: 30, medium: 30, low: 30}
+    medium:   {critical: 90, high: 90, medium: 90, low: 90}
+    low:      {critical: 180, high: 180, medium: 180, low: 180}
+  caps: {kevDueDate: true, maxDays: 180}
+{{- end }}
+  startFrom: firstSeen
+  restartOnReactivation: true
+  pauseDuringRiskAcceptance: true
+{{- end }}

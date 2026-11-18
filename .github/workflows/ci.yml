@@ -1,0 +1,110 @@
+# CI of the policy set: lint, render every combination, check it against the real Rampart code, and on a pull request
+# insist on a new version when the chart changed.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:        # the release workflow runs this first
+
+permissions:
+  contents: read
+
+env:
+  CHART: charts/rampart-policies
+  HELM_VERSION: v3.16.2
+
+jobs:
+  lint:
+    name: Lint and render
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Lint (defaults and every ci/ values file)
+        run: |
+          helm lint --strict "$CHART"
+          for f in "$CHART"/ci/*-values.yaml; do helm lint --strict "$CHART" -f "$f"; done
+
+      - name: Everything off renders nothing
+        run: |
+          n="$(helm template t "$CHART" | grep -c '^kind:' || true)"
+          [[ "$n" == "0" ]] || { echo "::error::the defaults must render nothing, got $n resources"; exit 1; }
+
+      - name: Generated files are up to date
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 scripts/generate.py --check
+
+      - name: Everything on renders what is expected
+        run: |
+          # 1 risk policy + 1 SLA policy + one resource for each framework in frameworks/, in each scope
+          want=$(( 2 + $(ls frameworks/*.yaml | wc -l) ))
+          for f in cluster namespace; do
+            n="$(helm template t "$CHART" -f "$CHART/ci/$f-all-values.yaml" | grep -c '^kind:')"
+            [[ "$n" == "$want" ]] || { echo "::error::$f: expected $want resources, got $n"; exit 1; }
+          done
+
+      - name: A wrong scope or SLA profile is refused
+        run: |
+          if helm template t "$CHART" --set riskPolicy.enabled=true --set scope=nope >/dev/null 2>&1; then echo "::error::scope=nope was accepted"; exit 1; fi
+          if helm template t "$CHART" --set slaPolicy.enabled=true --set slaPolicy.profile=nope >/dev/null 2>&1; then echo "::error::profile=nope was accepted"; exit 1; fi
+
+  validate:
+    name: Check against the Rampart code
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      # Pin RAMPART_REF (a repository variable) to the Rampart tag or commit this set is released against. Without it the
+      # check follows main, and a change there can fail this job on purpose: see tests/policyset_test.go.in.
+      - name: Check out Rampart
+        uses: actions/checkout@v4
+        with:
+          repository: taha2samy-3/Rampart
+          ref: ${{ vars.RAMPART_REF || 'main' }}
+          path: .rampart
+          token: ${{ secrets.RAMPART_READ_TOKEN || github.token }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .rampart/go.mod
+
+      - name: Server accepts it, risk policy is the built-in one, no SLA profile is capped
+        run: scripts/check.sh .rampart
+
+      - name: The logos are up to date with the Rampart screens' shape table
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 scripts/marks.py .rampart --check
+
+  version:
+    name: Version is bumped
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: A changed chart needs a new version and a changelog entry
+        run: |
+          base="origin/${{ github.base_ref }}"
+          changed="$(git diff --name-only "$base"...HEAD -- "$CHART" ":(exclude)$CHART/ci" | head -1)"
+          [[ -n "$changed" ]] || { echo "The chart did not change."; exit 0; }
+          new="$(yq '.version' "$CHART/Chart.yaml")"
+          old="$(git show "$base:$CHART/Chart.yaml" | yq '.version')"
+          [[ "$new" != "$old" ]] || { echo "::error::the chart changed but its version is still $old: bump Chart.yaml (README.md, Versioning)"; exit 1; }
+          grep -q "^## \[$new\]" CHANGELOG.md || { echo "::error::CHANGELOG.md has no section '## [$new]'"; exit 1; }

@@ -1,0 +1,1016 @@
+{
+  "firstSeen": "2026-03-02T09:00:00Z",
+  "policy": {
+    "bands": {
+      "critical": 800,
+      "high": 600,
+      "medium": 300
+    },
+    "base": {
+      "critical": 600,
+      "high": 400,
+      "info": 10,
+      "low": 80,
+      "medium": 200
+    },
+    "factors": [
+      {
+        "name": "KEV",
+        "when": "vuln.kev",
+        "points": 300,
+        "reason": "Vulnerability listed in CISA Known Exploited Vulnerabilities catalog",
+        "group": "threat"
+      },
+      {
+        "name": "EPSS_HIGH",
+        "when": "vuln.epss >= 0.5",
+        "points": 150,
+        "reason": "EPSS exploitation probability is >= 50%",
+        "group": "threat"
+      },
+      {
+        "name": "EPSS_MODERATE",
+        "when": "vuln.epss >= 0.1 && vuln.epss < 0.5",
+        "points": 60,
+        "reason": "EPSS exploitation probability is >= 10%",
+        "group": "threat"
+      },
+      {
+        "name": "EXPLOITED_REPORTED",
+        "when": "vuln.exploited && !vuln.kev",
+        "points": 300,
+        "reason": "Exploitation in the wild reported by a configured intelligence source (not in CISA KEV)",
+        "group": "threat"
+      },
+      {
+        "name": "EXPLOIT_WEAPONIZED",
+        "when": "vuln.exploit_maturity == \"weaponized\"",
+        "points": 120,
+        "reason": "A weaponized public exploit exists (a Metasploit module or a configured source)",
+        "group": "threat"
+      },
+      {
+        "name": "SECRET_VERIFIED",
+        "when": "finding.secret_verified",
+        "points": 250,
+        "reason": "Secret credential verified live against upstream provider",
+        "group": "threat"
+      },
+      {
+        "name": "INTERNET_FACING",
+        "when": "app.internet_facing",
+        "points": 100,
+        "reason": "Asset or application is internet-facing",
+        "group": "context"
+      },
+      {
+        "name": "SENSITIVE_DATA",
+        "when": "app.data_classification.exists(d, d in [\"pci\", \"pii\", \"phi\"])",
+        "points": 80,
+        "reason": "Application handles sensitive data (PCI, PII, or PHI)",
+        "group": "context"
+      },
+      {
+        "name": "APP_CRITICAL",
+        "when": "app.criticality == \"critical\"",
+        "points": 100,
+        "reason": "Application business criticality is rated Critical",
+        "group": "context"
+      },
+      {
+        "name": "APP_HIGH",
+        "when": "app.criticality == \"high\"",
+        "points": 50,
+        "reason": "Application business criticality is rated High",
+        "group": "context"
+      },
+      {
+        "name": "PRODUCTION_ENV",
+        "when": "finding.track in [\"production\", \"prod\"]",
+        "points": 60,
+        "reason": "Finding detected in production environment",
+        "group": "context"
+      },
+      {
+        "name": "COMPENSATING_CONTROL",
+        "when": "finding.category == \"dast\" && app.compensating_controls.exists(c, c in [\"waf\", \"api_gateway\"])",
+        "points": -80,
+        "reason": "The application is behind a web application firewall or an API gateway, which inspects the HTTP requests this finding needs",
+        "group": "reduction"
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "band": "high",
+      "base": 600,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 30,
+        "fedramp": 30,
+        "pci-dss": 30,
+        "rampart": 30,
+        "strictest": 30
+      },
+      "due": "2026-04-01T09:00:00Z",
+      "dueWithoutCap": "2026-04-01T09:00:00Z",
+      "factors": [],
+      "id": "S01",
+      "input": {
+        "app": {
+          "Criticality": "medium",
+          "InternetFacing": false,
+          "DataClassification": null,
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "critical",
+          "Category": "sca",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 600,
+      "story": "The scanner says critical, and nothing is known about the vulnerability or the application. Severity alone does not reach the critical band.",
+      "title": "A critical finding and nothing else"
+    },
+    {
+      "band": "medium",
+      "base": 400,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 90,
+        "fedramp": 90,
+        "pci-dss": 90,
+        "rampart": 120,
+        "strictest": 90
+      },
+      "due": "2026-06-30T09:00:00Z",
+      "dueWithoutCap": "2026-06-30T09:00:00Z",
+      "factors": [],
+      "id": "S02",
+      "input": {
+        "app": {
+          "Criticality": "low",
+          "InternetFacing": false,
+          "DataClassification": null,
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "high",
+          "Category": "sca",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 400,
+      "story": "A high finding in an internal, low-criticality application with no threat data is only medium.",
+      "title": "A high finding in a low-profile application"
+    },
+    {
+      "band": "high",
+      "base": 400,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 30,
+        "fedramp": 30,
+        "pci-dss": 30,
+        "rampart": 7,
+        "strictest": 7
+      },
+      "due": "2026-03-09T09:00:00Z",
+      "dueWithoutCap": "2026-03-09T09:00:00Z",
+      "factors": [
+        {
+          "name": "INTERNET_FACING",
+          "points": 100
+        },
+        {
+          "name": "SENSITIVE_DATA",
+          "points": 80
+        },
+        {
+          "name": "APP_CRITICAL",
+          "points": 100
+        }
+      ],
+      "id": "S03",
+      "input": {
+        "app": {
+          "Criticality": "critical",
+          "InternetFacing": true,
+          "DataClassification": [
+            "pci"
+          ],
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "high",
+          "Category": "sca",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 680,
+      "story": "Context alone adds 280 points (internet-facing 100, card data 80, critical application 100). That is high, but not critical.",
+      "title": "The same finding in a critical, internet-facing application that holds card data"
+    },
+    {
+      "band": "high",
+      "base": 400,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 30,
+        "fedramp": 30,
+        "pci-dss": 30,
+        "rampart": 7,
+        "strictest": 7
+      },
+      "due": "2026-03-09T09:00:00Z",
+      "dueWithoutCap": "2026-03-09T09:00:00Z",
+      "factors": [
+        {
+          "name": "EPSS_MODERATE",
+          "points": 60
+        },
+        {
+          "name": "INTERNET_FACING",
+          "points": 100
+        },
+        {
+          "name": "SENSITIVE_DATA",
+          "points": 80
+        },
+        {
+          "name": "APP_CRITICAL",
+          "points": 100
+        }
+      ],
+      "id": "S04",
+      "input": {
+        "app": {
+          "Criticality": "critical",
+          "InternetFacing": true,
+          "DataClassification": [
+            "pci"
+          ],
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "high",
+          "Category": "sca",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0.2,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 740,
+      "story": "A moderate EPSS adds 60 points.",
+      "title": "S03 with a 20% chance of exploitation (EPSS)"
+    },
+    {
+      "band": "critical",
+      "base": 400,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 15,
+        "fedramp": 30,
+        "pci-dss": 30,
+        "rampart": 3,
+        "strictest": 3
+      },
+      "due": "2026-03-05T09:00:00Z",
+      "dueWithoutCap": "2026-03-05T09:00:00Z",
+      "factors": [
+        {
+          "name": "EPSS_MODERATE",
+          "points": 60
+        },
+        {
+          "name": "INTERNET_FACING",
+          "points": 100
+        },
+        {
+          "name": "SENSITIVE_DATA",
+          "points": 80
+        },
+        {
+          "name": "APP_CRITICAL",
+          "points": 100
+        },
+        {
+          "name": "PRODUCTION_ENV",
+          "points": 60
+        }
+      ],
+      "id": "S05",
+      "input": {
+        "app": {
+          "Criticality": "critical",
+          "InternetFacing": true,
+          "DataClassification": [
+            "pci"
+          ],
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "high",
+          "Category": "sca",
+          "Track": "production",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0.2,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 800,
+      "story": "The production factor lands exactly on the limit of the critical band, 800, which is in it.",
+      "title": "S04 found on the production branch"
+    },
+    {
+      "band": "high",
+      "base": 400,
+      "cappedByKEV": true,
+      "days": {
+        "cisa-bod": 30,
+        "fedramp": 30,
+        "pci-dss": 30,
+        "rampart": 60,
+        "strictest": 30
+      },
+      "due": "2026-03-05T00:00:00Z",
+      "dueWithoutCap": "2026-05-01T09:00:00Z",
+      "factors": [
+        {
+          "name": "KEV",
+          "points": 300
+        }
+      ],
+      "id": "S06",
+      "input": {
+        "app": {
+          "Criticality": "low",
+          "InternetFacing": false,
+          "DataClassification": null,
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "high",
+          "Category": "sca",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "2026-03-04",
+        "vuln": {
+          "KEV": true,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 700,
+      "story": "KEV adds 300 points, which is high but not critical on its own. The deadline is what makes it urgent: it is capped by the CISA due date.",
+      "title": "A high finding on the CISA KEV list, in a low-profile application"
+    },
+    {
+      "band": "critical",
+      "base": 600,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 15,
+        "fedramp": 30,
+        "pci-dss": 30,
+        "rampart": 3,
+        "strictest": 3
+      },
+      "due": "2026-03-05T09:00:00Z",
+      "dueWithoutCap": "2026-03-05T09:00:00Z",
+      "factors": [
+        {
+          "name": "KEV",
+          "points": 300
+        },
+        {
+          "name": "INTERNET_FACING",
+          "points": 100
+        },
+        {
+          "name": "SENSITIVE_DATA",
+          "points": 80
+        },
+        {
+          "name": "APP_CRITICAL",
+          "points": 100
+        },
+        {
+          "name": "PRODUCTION_ENV",
+          "points": 60
+        }
+      ],
+      "id": "S07",
+      "input": {
+        "app": {
+          "Criticality": "critical",
+          "InternetFacing": true,
+          "DataClassification": [
+            "pci"
+          ],
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "critical",
+          "Category": "sca",
+          "Track": "production",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": true,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 1000,
+      "story": "Everything lines up. The points add to 1240 and are clamped to 1000.",
+      "title": "A critical KEV finding in a critical, internet-facing production application"
+    },
+    {
+      "band": "medium",
+      "base": 200,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 90,
+        "fedramp": 90,
+        "pci-dss": 90,
+        "rampart": 90,
+        "strictest": 90
+      },
+      "due": "2026-05-31T09:00:00Z",
+      "dueWithoutCap": "2026-05-31T09:00:00Z",
+      "factors": [
+        {
+          "name": "EPSS_HIGH",
+          "points": 150
+        }
+      ],
+      "id": "S08",
+      "input": {
+        "app": {
+          "Criticality": "medium",
+          "InternetFacing": false,
+          "DataClassification": null,
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "medium",
+          "Category": "sca",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0.6,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 350,
+      "story": "EPSS of 50% or more adds 150 points; a medium finding stays medium.",
+      "title": "A medium finding with a high EPSS"
+    },
+    {
+      "band": "low",
+      "base": 80,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 180,
+        "fedramp": 180,
+        "pci-dss": 180,
+        "rampart": 365,
+        "strictest": 180
+      },
+      "due": "2027-03-02T09:00:00Z",
+      "dueWithoutCap": "2027-03-02T09:00:00Z",
+      "factors": [
+        {
+          "name": "EXPLOIT_WEAPONIZED",
+          "points": 120
+        }
+      ],
+      "id": "S09",
+      "input": {
+        "app": {
+          "Criticality": "low",
+          "InternetFacing": false,
+          "DataClassification": null,
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "low",
+          "Category": "sca",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": "weaponized"
+        }
+      },
+      "score": 200,
+      "story": "A weaponized exploit adds 120 points, which is not enough to leave the low band.",
+      "title": "A low finding with a weaponized public exploit"
+    },
+    {
+      "band": "high",
+      "base": 400,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 30,
+        "fedramp": 30,
+        "pci-dss": 30,
+        "rampart": 30,
+        "strictest": 30
+      },
+      "due": "2026-04-01T09:00:00Z",
+      "dueWithoutCap": "2026-04-01T09:00:00Z",
+      "factors": [
+        {
+          "name": "SECRET_VERIFIED",
+          "points": 250
+        }
+      ],
+      "id": "S10",
+      "input": {
+        "app": {
+          "Criticality": "medium",
+          "InternetFacing": false,
+          "DataClassification": null,
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "high",
+          "Category": "secret",
+          "Track": "",
+          "SecretVerified": true
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 650,
+      "story": "A secret confirmed to work adds 250 points.",
+      "title": "A live (verified) secret in an internal application"
+    },
+    {
+      "band": "critical",
+      "base": 400,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 15,
+        "fedramp": 30,
+        "pci-dss": 30,
+        "rampart": 3,
+        "strictest": 3
+      },
+      "due": "2026-03-05T09:00:00Z",
+      "dueWithoutCap": "2026-03-05T09:00:00Z",
+      "factors": [
+        {
+          "name": "SECRET_VERIFIED",
+          "points": 250
+        },
+        {
+          "name": "INTERNET_FACING",
+          "points": 100
+        },
+        {
+          "name": "APP_CRITICAL",
+          "points": 100
+        }
+      ],
+      "id": "S11",
+      "input": {
+        "app": {
+          "Criticality": "critical",
+          "InternetFacing": true,
+          "DataClassification": null,
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "high",
+          "Category": "secret",
+          "Track": "",
+          "SecretVerified": true
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 850,
+      "story": "The same secret, with context, is critical.",
+      "title": "A live secret in a critical, internet-facing application"
+    },
+    {
+      "band": "medium",
+      "base": 200,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 90,
+        "fedramp": 90,
+        "pci-dss": 90,
+        "rampart": 30,
+        "strictest": 30
+      },
+      "due": "2026-04-01T09:00:00Z",
+      "dueWithoutCap": "2026-04-01T09:00:00Z",
+      "factors": [
+        {
+          "name": "INTERNET_FACING",
+          "points": 100
+        },
+        {
+          "name": "SENSITIVE_DATA",
+          "points": 80
+        },
+        {
+          "name": "APP_CRITICAL",
+          "points": 100
+        },
+        {
+          "name": "COMPENSATING_CONTROL",
+          "points": -80
+        }
+      ],
+      "id": "S12",
+      "input": {
+        "app": {
+          "Criticality": "critical",
+          "InternetFacing": true,
+          "DataClassification": [
+            "pci"
+          ],
+          "CompensatingControls": [
+            "waf"
+          ]
+        },
+        "finding": {
+          "Severity": "medium",
+          "Category": "dast",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 400,
+      "story": "A web application firewall in front lowers findings that a request-inspecting control can stop, by 80 points.",
+      "title": "A medium finding of a dynamic scan, behind a WAF"
+    },
+    {
+      "band": "medium",
+      "base": 200,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 90,
+        "fedramp": 90,
+        "pci-dss": 90,
+        "rampart": 30,
+        "strictest": 30
+      },
+      "due": "2026-04-01T09:00:00Z",
+      "dueWithoutCap": "2026-04-01T09:00:00Z",
+      "factors": [
+        {
+          "name": "INTERNET_FACING",
+          "points": 100
+        },
+        {
+          "name": "SENSITIVE_DATA",
+          "points": 80
+        },
+        {
+          "name": "APP_CRITICAL",
+          "points": 100
+        }
+      ],
+      "id": "S13",
+      "input": {
+        "app": {
+          "Criticality": "critical",
+          "InternetFacing": true,
+          "DataClassification": [
+            "pci"
+          ],
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "medium",
+          "Category": "dast",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 480,
+      "story": "The same finding with no control in front is 80 points higher.",
+      "title": "S12 without the WAF"
+    },
+    {
+      "band": "high",
+      "base": 400,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 30,
+        "fedramp": 30,
+        "pci-dss": 30,
+        "rampart": 30,
+        "strictest": 30
+      },
+      "due": "2026-04-01T09:00:00Z",
+      "dueWithoutCap": "2026-04-01T09:00:00Z",
+      "factors": [
+        {
+          "name": "EXPLOITED_REPORTED",
+          "points": 300
+        }
+      ],
+      "id": "S14",
+      "input": {
+        "app": {
+          "Criticality": "medium",
+          "InternetFacing": false,
+          "DataClassification": null,
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "high",
+          "Category": "sca",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0,
+          "Exploited": true,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 700,
+      "story": "Exploitation reported elsewhere counts as much as a KEV listing (300), but only when the finding is not already on KEV.",
+      "title": "A high finding reported as exploited by a source other than CISA"
+    },
+    {
+      "band": "low",
+      "base": 10,
+      "cappedByKEV": false,
+      "days": {
+        "cisa-bod": 180,
+        "fedramp": 180,
+        "pci-dss": 180,
+        "rampart": 365,
+        "strictest": 180
+      },
+      "due": "2027-03-02T09:00:00Z",
+      "dueWithoutCap": "2027-03-02T09:00:00Z",
+      "factors": [],
+      "id": "S15",
+      "input": {
+        "app": {
+          "Criticality": "low",
+          "InternetFacing": false,
+          "DataClassification": null,
+          "CompensatingControls": null
+        },
+        "finding": {
+          "Severity": "info",
+          "Category": "sast",
+          "Track": "",
+          "SecretVerified": false
+        },
+        "kevDue": "",
+        "vuln": {
+          "KEV": false,
+          "EPSS": 0,
+          "Exploited": false,
+          "ExploitMaturity": ""
+        }
+      },
+      "score": 10,
+      "story": "Info findings weigh 10 and stay in the low band.",
+      "title": "An informational finding"
+    }
+  ],
+  "slaProfiles": {
+    "cisa-bod": {
+      "kevDueDate": true,
+      "matrix": {
+        "critical": {
+          "critical": 15,
+          "high": 15,
+          "low": 15,
+          "medium": 15
+        },
+        "high": {
+          "critical": 30,
+          "high": 30,
+          "low": 30,
+          "medium": 30
+        },
+        "low": {
+          "critical": 180,
+          "high": 180,
+          "low": 180,
+          "medium": 180
+        },
+        "medium": {
+          "critical": 90,
+          "high": 90,
+          "low": 90,
+          "medium": 90
+        }
+      },
+      "maxDays": 180,
+      "startFrom": "firstSeen"
+    },
+    "fedramp": {
+      "kevDueDate": true,
+      "matrix": {
+        "critical": {
+          "critical": 30,
+          "high": 30,
+          "low": 30,
+          "medium": 30
+        },
+        "high": {
+          "critical": 30,
+          "high": 30,
+          "low": 30,
+          "medium": 30
+        },
+        "low": {
+          "critical": 180,
+          "high": 180,
+          "low": 180,
+          "medium": 180
+        },
+        "medium": {
+          "critical": 90,
+          "high": 90,
+          "low": 90,
+          "medium": 90
+        }
+      },
+      "maxDays": 180,
+      "startFrom": "firstSeen"
+    },
+    "pci-dss": {
+      "kevDueDate": true,
+      "matrix": {
+        "critical": {
+          "critical": 30,
+          "high": 30,
+          "low": 30,
+          "medium": 30
+        },
+        "high": {
+          "critical": 30,
+          "high": 30,
+          "low": 30,
+          "medium": 30
+        },
+        "low": {
+          "critical": 180,
+          "high": 180,
+          "low": 180,
+          "medium": 180
+        },
+        "medium": {
+          "critical": 90,
+          "high": 90,
+          "low": 90,
+          "medium": 90
+        }
+      },
+      "maxDays": 180,
+      "startFrom": "firstSeen"
+    },
+    "rampart": {
+      "kevDueDate": true,
+      "matrix": {
+        "critical": {
+          "critical": 3,
+          "high": 7,
+          "low": 30,
+          "medium": 14
+        },
+        "high": {
+          "critical": 7,
+          "high": 14,
+          "low": 60,
+          "medium": 30
+        },
+        "low": {
+          "critical": 90,
+          "high": 120,
+          "low": 365,
+          "medium": 180
+        },
+        "medium": {
+          "critical": 30,
+          "high": 45,
+          "low": 120,
+          "medium": 90
+        }
+      },
+      "maxDays": 365,
+      "startFrom": "firstSeen"
+    },
+    "strictest": {
+      "kevDueDate": true,
+      "matrix": {
+        "critical": {
+          "critical": 3,
+          "high": 7,
+          "low": 15,
+          "medium": 14
+        },
+        "high": {
+          "critical": 7,
+          "high": 14,
+          "low": 30,
+          "medium": 30
+        },
+        "low": {
+          "critical": 90,
+          "high": 120,
+          "low": 180,
+          "medium": 180
+        },
+        "medium": {
+          "critical": 30,
+          "high": 45,
+          "low": 90,
+          "medium": 90
+        }
+      },
+      "maxDays": 180,
+      "startFrom": "firstSeen"
+    }
+  }
+}

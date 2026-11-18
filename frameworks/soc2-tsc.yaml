@@ -1,0 +1,28 @@
+key: soc2
+id: soc2-tsc
+scope: soc2
+displayName: "SOC 2: Trust Services Criteria, common criteria (security)"
+version: "2017 TSC, revised points of focus 2022"
+source: "https://www.aicpa-cima.com/resources/landing/system-and-organization-controls-soc-suite-of-services"
+description: "The common criteria of the security category that a scanner can speak to, and the ones an auditor will ask a person about."
+note: "An approximation. The criteria text is the AICPA's, so only the identifiers are used. The AICPA has opened a revision with different numbering; check the ids before an audit."
+evidenceWindowDays: 30
+verification:
+  level: secondary
+  how: "The Trust Services Criteria are sold by the AICPA, so the text was not read. The identifiers and subjects (CC3.2, CC6.1, CC6.6, CC6.8, CC7.1, CC8.1, CC9.2) come from published guidance and agree across it. Check them against TSP section 100 before an audit."
+licence: "The criteria text belongs to the AICPA, so control names here are written in our own words and only the identifiers are the AICPA's."
+decisions:
+  - "SOC 2 is audited by a CPA against criteria the organisation interprets, so this framework shows evidence an auditor may ask for, not a result."
+  - "CC7.1 (detecting new vulnerabilities) reads recent scans and open high or critical findings; CC6.1 reads secrets in code as a logical-access weakness; CC6.8 reads supply-chain findings as malicious software entering through the build."
+limits:
+  - "The criteria on availability, confidentiality, processing integrity and privacy are not listed."
+  - "Most common criteria (control environment, communication, risk assessment, monitoring) are organisational and are not listed."
+  - "The AICPA numbering is under revision (docs/frameworks/README.md of this repository will note it when it changes)."
+controls:
+  - {id: CC3.2, name: "Risks to objectives are identified and analysed", manual: true, why: "Risk analysis is done by people."}
+  - {id: CC6.1, name: "Logical access protections (no credentials in code)", categories: [secret], why: "A credential in code bypasses logical access controls."}
+  - {id: CC6.6, name: "Protection against threats from outside the system boundary", categories: [dast], minSeverity: high, why: "Dynamic testing finds what an outside attacker can reach; open high or critical findings count."}
+  - {id: CC6.8, name: "Prevent or detect unauthorised or malicious software", categories: [supply_chain], evidence: [supply_chain, sca], why: "Findings of kind supply_chain include malicious packages entering through the build."}
+  - {id: CC7.1, name: "Detect new vulnerabilities and configuration changes", categories: [sca, container, sast, dast, iac], minSeverity: high, evidence: [sca, container, sast, dast], why: "Detection is evidenced by recent scans; open high or critical findings are detected vulnerabilities not yet resolved."}
+  - {id: CC8.1, name: "Changes are authorised, tested and approved", manual: true, why: "Change authorisation is a procedure."}
+  - {id: CC9.2, name: "Vendor and business-partner risk", manual: true, why: "Vendor risk management is organisational."}

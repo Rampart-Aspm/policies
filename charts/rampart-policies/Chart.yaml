@@ -1,0 +1,15 @@
+apiVersion: v2
+name: rampart-policies
+description: The scoring policies (risk, SLA) and the compliance frameworks of Rampart, as one versioned set. Everything is off until you turn it on.
+type: application
+# The chart IS the policy set: its version is the version of the set. Any change to a number, a control or a profile
+# is a new version (README.md, "Versioning").
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.25.0-0"
+keywords: [rampart, aspm, risk, sla, compliance, policy]
+sources:
+  - https://github.com/taha2samy-3/Rampart
+annotations:
+  artifacthub.io/category: security
+  rampart.aspm.dev/needs-crds: "RiskPolicy ClusterRiskPolicy SLAPolicy ClusterSLAPolicy ComplianceFramework ClusterComplianceFramework"

@@ -1,0 +1,37 @@
+key: nist80053
+id: nist-800-53-r5
+scope: nist-800-53
+displayName: "NIST SP 800-53 Rev. 5: vulnerability and supply-chain subset"
+version: "Rev. 5"
+source: "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final"
+description: "The controls of the US federal security catalogue (the base of FedRAMP) that software scanning can speak to: risk and vulnerability management, flaw remediation, developer testing, secrets, cryptography, input validation and supply chain."
+note: "An approximation. IA-5.7 is control enhancement IA-5(7): the server does not accept parentheses in an id."
+evidenceWindowDays: 30
+windowWhy: "FedRAMP, which is built on this catalogue, asks for vulnerability scans every month."
+verification:
+  level: primary
+  how: "Every id and title was checked against NIST's OSCAL catalogue of Rev. 5 (usnistgov/oscal-content, SP 800-53 Rev. 5 JSON). All 15 are present with exactly the titles shown."
+licence: "NIST publications are in the public domain, so the published titles are used as they are."
+decisions:
+  - "Only controls that scanning, or the absence of it, can speak to were chosen: risk and vulnerability management (RA-3, RA-5, SI-2), development and testing (SA-11, SA-15, CA-8), supply chain and inventory (SR-3, SR-4, CM-8), configuration (CM-6), and technical protections that have well-known weakness classes (IA-5(7), SC-8, SC-13, SC-28, SI-10). The catalogue has about a thousand controls and enhancements; the rest (physical, personnel, incident response, contingency planning) give a scanner nothing to say."
+  - "RA-5 and SI-2 read open findings of severity high or above. The catalogue leaves the timeframe to the organisation, and FedRAMP, built on it, gives critical and high a deadline. The deadline itself is the SLA policy's job, not this framework's."
+  - "Weakness lists for SC-8, SC-13, SC-28 and SI-10 are ours: NIST does not map its controls to CWE. They are the usual weakness classes for the property the control protects (see METHOD.md)."
+limits:
+  - "No control here measures time. SI-2 asks for flaws to be corrected within an organisation-defined period, and this reads only whether a high or critical finding is open (docs/FOUNDATION.md, item 2)."
+  - "Controls outside software (physical, personnel, incident response, contingency planning and the like) are not listed."
+controls:
+  - {id: RA-3, name: "Risk Assessment", manual: true, why: "An assessment of the organisation's risks is done by people."}
+  - {id: RA-5, name: "Vulnerability Monitoring and Scanning", categories: [sca, container, sast, dast, iac], minSeverity: high, evidence: [sca, container, sast, dast], why: "The control is that vulnerability scanning happens and its findings are acted on: any scan of the kinds that find vulnerabilities evidences it, and open high or critical findings count against it."}
+  - {id: SI-2, name: "Flaw Remediation", categories: [sca, container], minSeverity: high, why: "Flaws in other people's code (dependencies and images) are what flaw remediation means for an application; open high or critical ones are the unremediated flaws."}
+  - {id: SA-11, name: "Developer Testing and Evaluation", categories: [sast], minSeverity: high, evidence: [sast, dast], why: "Developer testing is static or dynamic testing of the application's own code; open high or critical findings from it count."}
+  - {id: SA-15, name: "Development Process, Standards, and Tools", manual: true, why: "A development process and its standards are a practice, not something a scan sees."}
+  - {id: SR-3, name: "Supply Chain Controls and Processes", manual: true, why: "Processes with suppliers are contractual and organisational."}
+  - {id: SR-4, name: "Provenance", categories: [supply_chain], evidence: [supply_chain, sca], why: "Findings of kind supply_chain are provenance problems (for example a malicious or tampered package); an SBOM or dependency scan evidences that components are tracked."}
+  - {id: CM-6, name: "Configuration Settings", categories: [iac, cspm], minSeverity: medium, why: "Misconfiguration findings from infrastructure-as-code and cloud posture scans are configuration settings that deviate from a secure baseline."}
+  - {id: CM-8, name: "System Component Inventory", manual: true, description: "Evidence: an SBOM is uploaded for every application.", why: "The inventory itself is the SBOM, whose presence Rampart cannot yet test as evidence (docs/FOUNDATION.md, item 3)."}
+  - {id: IA-5.7, name: "No Embedded Unencrypted Static Authenticators", categories: [secret], why: "A secret found in code is exactly an embedded static authenticator."}
+  - {id: SC-8, name: "Transmission Confidentiality and Integrity", cwes: [319, 295, 297], why: "The weaknesses that expose data in transit: cleartext transmission and certificate validation failures."}
+  - {id: SC-13, name: "Cryptographic Protection", cwes: [326, 327, 328, 330, 759, 916], why: "The weaknesses of cryptography itself: weak strength, broken algorithms, weak hashes, poor randomness, unsalted or cheap password hashes."}
+  - {id: SC-28, name: "Protection of Information at Rest", cwes: [311, 312, 313], why: "The weaknesses that leave stored data unencrypted."}
+  - {id: SI-10, name: "Information Input Validation", cwes: [20, 22, 77, 78, 79, 89, 94, 502, 611, 918], why: "Improper input validation and the injection classes that follow from it (path traversal, command, OS command, cross-site scripting, SQL, code injection, deserialization, XML external entities, server-side request forgery)."}
+  - {id: CA-8, name: "Penetration Testing", categories: [dast], minSeverity: high, why: "Dynamic testing is the scanner's form of penetration testing; open high or critical findings from it count."}

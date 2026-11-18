@@ -1,0 +1,17 @@
+# Everything on, one tenant's namespace: what CI renders and checks.
+scope: namespace
+namespace: rampart
+riskPolicy: {enabled: true}
+slaPolicy: {enabled: true, profile: rampart}
+compliance:
+  nist80053: {enabled: true}
+  nist800171: {enabled: true}
+  nistcsf: {enabled: true}
+  pcidss: {enabled: true}
+  iso27001: {enabled: true}
+  soc2: {enabled: true}
+  hipaa: {enabled: true}
+  gdpr: {enabled: true}
+  owaspapi: {enabled: true}
+  eucra: {enabled: true}
+  nis2: {enabled: true}

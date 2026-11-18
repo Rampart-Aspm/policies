@@ -1,0 +1,37 @@
+key: nistcsf
+id: nist-csf-2.0
+scope: nist-csf
+displayName: "NIST Cybersecurity Framework 2.0: software and vulnerability outcomes"
+version: "2.0"
+source: "https://www.nist.gov/cyberframework"
+description: "The outcomes of the framework that bear on software, vulnerabilities, configuration and the software supply chain."
+note: "An approximation. The framework states outcomes, not requirements, so a matched control shows evidence toward an outcome."
+evidenceWindowDays: 30
+windowWhy: "Continuous identification of vulnerabilities is the outcome; monthly is the common practice."
+verification:
+  level: primary
+  how: "Every id and the wording of every outcome were read from NIST's own CSF 2.0 reference download (the Excel workbook published by NIST). All 15 are present with the wording shown."
+licence: "NIST publications are in the public domain, so the published wording is used as it is."
+decisions:
+  - "Subcategories were chosen where software, vulnerabilities, configuration or the supply chain are the subject: GV.SC (supply chain), ID.AM-02 (software inventory), ID.RA (vulnerability and risk identification), ID.IM-02, PR.PS (platform security), PR.DS (data security) and PR.AA-01 (credentials)."
+  - "The framework is outcome-based. 'Vulnerabilities in assets are identified, validated, and recorded' (ID.RA-01) is a statement about a process; here it reads as: scanned recently, and nothing critical left open. That is a deliberate, weaker reading, named as such in each control."
+  - "DE.CM-09 (monitoring of runtime environments) is not listed: it concerns runtime monitoring, which no scanner Rampart reads provides."
+limits:
+  - "Outcomes about governance, response and recovery (the GV, RS and RC functions apart from the supply chain) are not listed."
+  - "No control measures time (docs/FOUNDATION.md, item 2)."
+controls:
+  - {id: GV.SC-04, name: "Suppliers are known and prioritized by criticality", manual: true, why: "A supplier register is an organisational record."}
+  - {id: GV.SC-07, name: "The risks posed by a supplier, their products and services, and other third parties are understood, recorded, prioritized, assessed, responded to, and monitored over the course of the relationship", manual: true, why: "Supplier risk assessment is organisational."}
+  - {id: GV.SC-09, name: "Supply chain security practices are integrated into cybersecurity and enterprise risk management programs, and their performance is monitored throughout the technology product and service life cycle", manual: true, why: "Integration into a programme is organisational."}
+  - {id: ID.AM-02, name: "Inventories of software, services, and systems managed by the organization are maintained", manual: true, description: "Evidence: an SBOM is uploaded for every application.", why: "The software inventory is the SBOM, whose presence Rampart cannot yet test as evidence (docs/FOUNDATION.md, item 3)."}
+  - {id: ID.RA-01, name: "Vulnerabilities in assets are identified, validated, and recorded", categories: [sca, container, sast, dast], minSeverity: critical, evidence: [sca, container, sast, dast], description: "Read as: scanned lately, and nothing critical left open.", why: "Identification is evidenced by a recent scan; the severity floor keeps the control from failing on every finding the process is meant to record."}
+  - {id: ID.RA-05, name: "Threats, vulnerabilities, likelihoods, and impacts are used to understand inherent risk and inform risk response prioritization", manual: true, description: "Evidence: the risk score and its factor breakdown, which use threat data (KEV, EPSS) and the application's context.", why: "Rampart's score is itself this practice, but whether the organisation uses it to prioritise is attested."}
+  - {id: ID.RA-08, name: "Processes for receiving, analyzing, and responding to vulnerability disclosures are established", manual: true, why: "A disclosure process is organisational."}
+  - {id: ID.RA-09, name: "The authenticity and integrity of hardware and software are assessed prior to acquisition and use", categories: [supply_chain], evidence: [supply_chain, sca], why: "Findings of kind supply_chain are authenticity and integrity problems with components."}
+  - {id: ID.IM-02, name: "Improvements are identified from security tests and exercises, including those done in coordination with suppliers and relevant third parties", manual: true, why: "Acting on test results is a practice."}
+  - {id: PR.PS-01, name: "Configuration management practices are established and applied", categories: [iac, cspm], minSeverity: medium, why: "Misconfiguration findings show where configuration practice is not applied."}
+  - {id: PR.PS-02, name: "Software is maintained, replaced, and removed commensurate with risk", categories: [sca, container], minSeverity: high, why: "Open high or critical flaws in dependencies and images are software not maintained to its risk."}
+  - {id: PR.PS-06, name: "Secure software development practices are integrated, and their performance is monitored throughout the software development life cycle", categories: [sast], minSeverity: high, evidence: [sast, dast], why: "Static and dynamic testing of the code is the monitoring of secure development practice; open high or critical findings count."}
+  - {id: PR.DS-01, name: "The confidentiality, integrity, and availability of data-at-rest are protected", cwes: [311, 312, 313], why: "The weaknesses that leave stored data unprotected."}
+  - {id: PR.DS-02, name: "The confidentiality, integrity, and availability of data-in-transit are protected", cwes: [319, 295, 297], why: "The weaknesses that expose data in transit."}
+  - {id: PR.AA-01, name: "Identities and credentials for authorized users, services, and hardware are managed by the organization", categories: [secret], why: "Secrets found in code are credentials that are not managed."}

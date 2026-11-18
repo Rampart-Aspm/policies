@@ -1,0 +1,30 @@
+key: hipaa
+id: hipaa-security-rule
+scope: hipaa
+displayName: "HIPAA Security Rule (45 CFR 164): technical safeguards subset"
+version: "45 CFR 164, subpart C"
+source: "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C"
+description: "The standards of the Security Rule that bear on software that stores or moves electronic protected health information."
+note: "An approximation. Ids are the section path with dots: 164.308.a.1.ii.A is 164.308(a)(1)(ii)(A). Encryption is an addressable specification in the rule, not an absolute requirement."
+evidenceWindowDays: 30
+verification:
+  level: primary
+  how: "Every standard and specification was read in the official text of 45 CFR part 164, subpart C, from the eCFR (www.ecfr.gov): Risk analysis (Required), Risk management (Required), Evaluation, Protection from malicious software (Addressable), Access control, Encryption and decryption (Addressable), Integrity, Person or entity authentication and Transmission security."
+licence: "A US federal regulation, public domain. The published headings are used as they are."
+decisions:
+  - "Only the standards that bear on software were chosen (administrative: 164.308(a)(1), (a)(5), (a)(8); technical: 164.312). Physical safeguards, workforce, contingency planning and the organisational requirements are not software findings."
+  - "The Security Rule is technology-neutral and names no weakness, so the weakness lists for encryption, integrity, authentication and transmission are ours (METHOD.md)."
+  - "164.308(a)(8), the periodic evaluation, reads as: tested lately, and nothing critical left open, a deliberate and weaker reading."
+limits:
+  - "The rule is risk-based: an addressable specification can be met by an equivalent measure or documented as not reasonable. A finding against it is evidence to weigh, not a violation."
+  - "Audit controls, contingency planning, physical safeguards and the organisational and documentation requirements are not listed."
+controls:
+  - {id: 164.308.a.1.ii.A, name: "Risk analysis (Required)", manual: true, why: "An accurate and thorough risk analysis is a documented assessment by people."}
+  - {id: 164.308.a.1.ii.B, name: "Risk management (Required): reduce risks and vulnerabilities to a reasonable and appropriate level", categories: [sca, container, sast, dast], minSeverity: high, why: "Open high or critical vulnerabilities are risks not yet reduced."}
+  - {id: 164.308.a.5.ii.B, name: "Protection from malicious software (Addressable)", categories: [supply_chain], evidence: [supply_chain, sca], why: "Findings of kind supply_chain include malicious packages."}
+  - {id: 164.308.a.8, name: "Evaluation: periodic technical and nontechnical evaluation", categories: [sca, container, sast, dast], minSeverity: critical, evidence: [sca, container, sast, dast], description: "Read as: tested lately, and nothing critical left open.", why: "A recent scan evidences the technical evaluation; the severity floor stops the control failing on every finding the evaluation exists to find."}
+  - {id: 164.312.a.1, name: "Access control (no credentials in code)", categories: [secret], why: "A credential in code bypasses access control for the system that holds the information."}
+  - {id: 164.312.a.2.iv, name: "Encryption and decryption (Addressable)", cwes: [311, 312, 326, 327], why: "Missing encryption of sensitive data, cleartext storage, and weak or broken encryption."}
+  - {id: 164.312.c.1, name: "Integrity: protect information from improper alteration or destruction", cwes: [345, 494], why: "Insufficient verification of data authenticity and code downloaded without an integrity check are the weaknesses that allow improper alteration."}
+  - {id: 164.312.d, name: "Person or entity authentication", cwes: [287, 306, 798], why: "Improper authentication, missing authentication for critical functions and hard-coded credentials."}
+  - {id: 164.312.e.1, name: "Transmission security", cwes: [319, 295, 297], why: "Cleartext transmission and certificate validation failures expose information in transit."}

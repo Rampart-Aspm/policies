@@ -1,0 +1,37 @@
+key: nist800171
+id: nist-800-171-r3
+scope: nist-800-171
+displayName: "NIST SP 800-171 Rev. 3: protecting controlled unclassified information"
+version: "Rev. 3"
+source: "https://csrc.nist.gov/pubs/sp/800/171/r3/final"
+description: "The requirements for protecting federal controlled unclassified information in non-federal systems, which US defence contractors are assessed against, restricted to those that scanning can speak to."
+note: "An approximation. Rev. 3 is the current revision; the US defence certification programme may still assess against Rev. 2, whose numbering differs."
+evidenceWindowDays: 30
+windowWhy: "The vulnerability-scanning requirement asks for periodic scans; monthly is the common practice."
+verification:
+  level: primary
+  how: "Every id and title was checked against NIST's OSCAL catalogue of Rev. 3 (usnistgov/oscal-content, SP 800-171 Rev. 3 JSON). All 15 are present with exactly the titles shown. Only Rev. 3 is published in OSCAL, which is why Rev. 2 is not offered."
+licence: "NIST publications are in the public domain, so the published titles are used as they are."
+decisions:
+  - "The same selection principle as for SP 800-53 (METHOD.md): risk and vulnerability management, configuration, cryptography, authenticators, flaw and malicious-code handling, and supply chain."
+  - "03.11.02 and 03.14.01 read open findings of severity high or above, as RA-5 and SI-2 do in SP 800-53, of which this publication is a tailored subset."
+  - "03.13.08 joins transmission and storage in one requirement, so it carries both weakness lists."
+limits:
+  - "Rev. 2 numbering (for example 3.11.2) is not covered. Use a Rev. 2 mapping if the assessment is against Rev. 2."
+  - "No control measures time (docs/FOUNDATION.md, item 2)."
+controls:
+  - {id: "03.04.01", name: "Baseline Configuration", manual: true, why: "A documented baseline configuration is a managed artefact."}
+  - {id: "03.04.02", name: "Configuration Settings", categories: [iac, cspm], minSeverity: medium, why: "Misconfiguration findings are deviations from secure configuration settings."}
+  - {id: "03.05.12", name: "Authenticator Management", categories: [secret], why: "Secrets found in code are unmanaged authenticators."}
+  - {id: "03.11.01", name: "Risk Assessment", manual: true, why: "A risk assessment is done by people."}
+  - {id: "03.11.02", name: "Vulnerability Monitoring and Scanning", categories: [sca, container, sast, dast, iac], minSeverity: high, evidence: [sca, container, sast, dast], why: "Scanning must happen and its findings be acted on: any recent scan evidences it, and open high or critical findings count against it."}
+  - {id: "03.11.04", name: "Risk Response", manual: true, why: "Choosing to accept, mitigate or transfer a risk is a decision."}
+  - {id: "03.13.08", name: "Transmission and Storage Confidentiality", cwes: [319, 295, 297, 311, 312, 313], why: "The weaknesses that expose data in transit (cleartext, certificate validation) and at rest (unencrypted storage)."}
+  - {id: "03.13.11", name: "Cryptographic Protection", cwes: [326, 327, 328, 330, 759, 916], why: "The weaknesses of cryptography itself."}
+  - {id: "03.14.01", name: "Flaw Remediation", categories: [sca, container], minSeverity: high, why: "Open high or critical flaws in dependencies and images are the unremediated flaws."}
+  - {id: "03.14.02", name: "Malicious Code Protection", categories: [supply_chain], evidence: [supply_chain, sca], why: "Findings of kind supply_chain include malicious packages, which is malicious code entering through the build."}
+  - {id: "03.16.01", name: "Security Engineering Principles", manual: true, why: "Engineering principles are applied in design."}
+  - {id: "03.16.02", name: "Unsupported System Components", manual: true, why: "End-of-life status of a component is not reported by the scanners Rampart reads today."}
+  - {id: "03.16.03", name: "External System Services", manual: true, why: "Requirements on external service providers are contractual."}
+  - {id: "03.17.01", name: "Supply Chain Risk Management Plan", manual: true, why: "A plan is a document."}
+  - {id: "03.17.03", name: "Supply Chain Requirements and Processes", manual: true, why: "Supplier requirements are contractual and organisational."}

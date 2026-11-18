@@ -1,0 +1,89 @@
+# Worked examples of the risk policy and the SLA policy. Each one is evaluated by the real Rampart code in CI
+# (tests/policyset_test.go.in) and the results are kept in scenarios.golden.json, from which SCORING.md and SLA.md are
+# generated. To change or add one, edit this file and run:  UPDATE_GOLDEN=1 scripts/check.sh <rampart checkout>  and then  scripts/generate.py
+# Values use the spelling the policy sees (api_gateway, not apiGateway).
+firstSeen: "2026-03-02T09:00:00Z"
+scenarios:
+  - id: S01
+    title: "A critical finding and nothing else"
+    story: "The scanner says critical, and nothing is known about the vulnerability or the application. Severity alone does not reach the critical band."
+    finding: {severity: critical, category: sca}
+    app: {criticality: medium}
+  - id: S02
+    title: "A high finding in a low-profile application"
+    story: "A high finding in an internal, low-criticality application with no threat data is only medium."
+    finding: {severity: high, category: sca}
+    app: {criticality: low}
+  - id: S03
+    title: "The same finding in a critical, internet-facing application that holds card data"
+    story: "Context alone adds 280 points (internet-facing 100, card data 80, critical application 100). That is high, but not critical."
+    finding: {severity: high, category: sca}
+    app: {criticality: critical, internet_facing: true, data_classification: [pci]}
+  - id: S04
+    title: "S03 with a 20% chance of exploitation (EPSS)"
+    story: "A moderate EPSS adds 60 points."
+    finding: {severity: high, category: sca}
+    vuln: {epss: 0.2}
+    app: {criticality: critical, internet_facing: true, data_classification: [pci]}
+  - id: S05
+    title: "S04 found on the production branch"
+    story: "The production factor lands exactly on the limit of the critical band, 800, which is in it."
+    finding: {severity: high, category: sca, track: production}
+    vuln: {epss: 0.2}
+    app: {criticality: critical, internet_facing: true, data_classification: [pci]}
+  - id: S06
+    title: "A high finding on the CISA KEV list, in a low-profile application"
+    story: "KEV adds 300 points, which is high but not critical on its own. The deadline is what makes it urgent: it is capped by the CISA due date."
+    finding: {severity: high, category: sca}
+    vuln: {kev: true}
+    app: {criticality: low}
+    kevDue: "2026-03-04"
+  - id: S07
+    title: "A critical KEV finding in a critical, internet-facing production application"
+    story: "Everything lines up. The points add to 1240 and are clamped to 1000."
+    finding: {severity: critical, category: sca, track: production}
+    vuln: {kev: true}
+    app: {criticality: critical, internet_facing: true, data_classification: [pci]}
+  - id: S08
+    title: "A medium finding with a high EPSS"
+    story: "EPSS of 50% or more adds 150 points; a medium finding stays medium."
+    finding: {severity: medium, category: sca}
+    vuln: {epss: 0.6}
+    app: {criticality: medium}
+  - id: S09
+    title: "A low finding with a weaponized public exploit"
+    story: "A weaponized exploit adds 120 points, which is not enough to leave the low band."
+    finding: {severity: low, category: sca}
+    vuln: {exploit_maturity: weaponized}
+    app: {criticality: low}
+  - id: S10
+    title: "A live (verified) secret in an internal application"
+    story: "A secret confirmed to work adds 250 points."
+    finding: {severity: high, category: secret, secret_verified: true}
+    app: {criticality: medium}
+  - id: S11
+    title: "A live secret in a critical, internet-facing application"
+    story: "The same secret, with context, is critical."
+    finding: {severity: high, category: secret, secret_verified: true}
+    app: {criticality: critical, internet_facing: true}
+  - id: S12
+    title: "A medium finding of a dynamic scan, behind a WAF"
+    story: "A web application firewall in front lowers findings that a request-inspecting control can stop, by 80 points."
+    finding: {severity: medium, category: dast}
+    app: {criticality: critical, internet_facing: true, data_classification: [pci], compensating_controls: [waf]}
+  - id: S13
+    title: "S12 without the WAF"
+    story: "The same finding with no control in front is 80 points higher."
+    finding: {severity: medium, category: dast}
+    app: {criticality: critical, internet_facing: true, data_classification: [pci]}
+  - id: S14
+    title: "A high finding reported as exploited by a source other than CISA"
+    story: "Exploitation reported elsewhere counts as much as a KEV listing (300), but only when the finding is not already on KEV."
+    finding: {severity: high, category: sca}
+    vuln: {exploited: true}
+    app: {criticality: medium}
+  - id: S15
+    title: "An informational finding"
+    story: "Info findings weigh 10 and stay in the low band."
+    finding: {severity: info, category: sast}
+    app: {criticality: low}
