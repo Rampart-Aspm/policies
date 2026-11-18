@@ -2,7 +2,9 @@
 
 The scoring policies and the compliance frameworks of [Rampart](https://github.com/taha2samy-3/Rampart), as one **versioned Helm chart**. A new version of this chart is a new version of the policy set: what a finding scores, how long you have to fix it, and what a compliance screen asks for.
 
-**Everything is off by default.** Rampart will ship these policies by default, so this chart is for pinning them from Git, or for overriding them, with a version and a changelog to point at. Turn on only what you want.
+**Everything is on by default.** A plain `helm install` gives every tenant the risk policy, the SLA policy (profile `strictest`) and the eleven compliance frameworks, as the cluster-wide default (scope `cluster`: a tenant that has a policy of its own keeps it). Each part is turned off with `enabled: false`. The chart is how that default policy set is versioned, pinned from Git and overridden, with a changelog to point at.
+
+**It needs a Rampart that has the application `environment` (schema version 51).** The risk policy reads `app.environment`; an older server refuses the policy and keeps its built-in one. Use `0.1.0`, whose risk policy does not read it, until the server is upgraded.
 
 ## What is in it
 
@@ -41,10 +43,12 @@ Three kinds of value are used, and each is marked wherever it appears: **Standar
 ## Install
 
 ```sh
-helm install rampart-policies oci://ghcr.io/<owner>/charts/rampart-policies --version 0.1.0 \
-  --set riskPolicy.enabled=true \
-  --set slaPolicy.enabled=true --set slaPolicy.profile=pci-dss \
-  --set compliance.pcidss.enabled=true
+# everything on, as the default of every tenant
+helm install rampart-policies oci://ghcr.io/rampart-aspm/charts/rampart-policies --version 0.2.0
+
+# leave one part out, or choose another SLA profile
+helm install rampart-policies oci://ghcr.io/rampart-aspm/charts/rampart-policies --version 0.2.0 \
+  --set compliance.hipaa.enabled=false --set slaPolicy.profile=pci-dss
 ```
 
 `<owner>` is the GitHub owner that publishes the release. With Argo CD, point an application at the chart and keep the values in Git:
@@ -68,13 +72,13 @@ The cluster needs the Rampart CRDs for the kinds above (they ship with the Rampa
 |---|---|---|
 | `scope` | `cluster` | `cluster`: `Cluster*` kinds, the default of every tenant. `namespace`: the plain kinds in `namespace`, one tenant's own policy, which wins over a cluster one |
 | `namespace` | `rampart` | used when `scope` is `namespace`; it must be a namespace of the tenant |
-| `riskPolicy.enabled` | `false` | the scoring formula |
-| `slaPolicy.enabled` | `false` | the deadlines |
+| `riskPolicy.enabled` | `true` | the scoring formula |
+| `slaPolicy.enabled` | `true` | the deadlines |
 | `slaPolicy.profile` | `strictest` | `strictest` (the smallest number of the other four in every cell, so it meets all of them), `rampart` (the built-in matrix), `pci-dss`, `fedramp` or `cisa-bod`. One policy is in force, so one profile is rendered |
 | `compliance.logos` | `true` | give each framework a `logoUrl`: its own mark, an SVG that Rampart draws itself (docs/METHOD.md, "Logos"). Set `false` for a cluster that cannot reach the internet |
 | `compliance.logoBaseUrl` | `https://raw.githubusercontent.com/Rampart-Aspm/policies/main/logos` | where the marks are fetched from; the repository must be public |
 | `compliance.logoUrls` | `{}` | a logo of your own for one framework, by key; it wins over the two above |
-| `compliance.<key>.enabled` | `false` | one flag per framework: `nist80053`, `nist800171`, `nistcsf`, `pcidss`, `iso27001`, `soc2`, `hipaa`, `gdpr`, `owaspapi`, `eucra`, `nis2` |
+| `compliance.<key>.enabled` | `true` | one flag per framework: `nist80053`, `nist800171`, `nistcsf`, `pcidss`, `iso27001`, `soc2`, `hipaa`, `gdpr`, `owaspapi`, `eucra`, `nis2` |
 
 A framework reads an application only when the application lists the framework's scope in `complianceScope` (`nist-800-53`, `nist-800-171`, `nist-csf`, `pci-dss`, `iso-27001`, `soc2`, `hipaa`, `gdpr`, `owasp-api`, `eu-cra`, `eu-nis2`). A tenant with no policy of its own gets the cluster one. The policy named `default` is the one the server reads first, so enabling this chart's policy replaces another `default` of the same scope.
 

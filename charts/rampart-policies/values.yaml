@@ -1,5 +1,5 @@
-# Everything is OFF. Rampart will ship these policies by default; turn one on to pin it from Git.
-# README.md says what every value rests on.
+# Everything is ON: a plain `helm install` gives every tenant the risk policy, the SLA policy and the compliance frameworks (scope
+# cluster is the default of every tenant). Set a flag to false to leave that part out. README.md says what every value rests on.
 
 # cluster:   ClusterRiskPolicy, ClusterSLAPolicy, ClusterComplianceFramework: the default of every tenant.
 # namespace: RiskPolicy, SLAPolicy, ComplianceFramework in `namespace`: one tenant's own policy, which wins over a cluster one.
@@ -8,26 +8,26 @@ namespace: rampart
 
 # The scoring formula. Named "default": the name the server reads first.
 riskPolicy:
-  enabled: false
+  enabled: true
 
 # How long a finding may stay open. One policy is in force, so one profile is rendered.
 slaPolicy:
-  enabled: false
+  enabled: true
   profile: strictest          # strictest | rampart | pci-dss | fedramp | cisa-bod
 
 # A framework reads an application only when the application lists the framework's scope in complianceScope.
 compliance:
-  nist80053: {enabled: false} # scope: nist-800-53
-  nist800171: {enabled: false} # scope: nist-800-171
-  nistcsf: {enabled: false} # scope: nist-csf
-  pcidss: {enabled: false} # scope: pci-dss
-  iso27001: {enabled: false} # scope: iso-27001
-  soc2: {enabled: false} # scope: soc2
-  hipaa: {enabled: false} # scope: hipaa
-  gdpr: {enabled: false} # scope: gdpr
-  owaspapi: {enabled: false} # scope: owasp-api
-  eucra: {enabled: false} # scope: eu-cra
-  nis2: {enabled: false} # scope: eu-nis2
+  nist80053: {enabled: true} # scope: nist-800-53
+  nist800171: {enabled: true} # scope: nist-800-171
+  nistcsf: {enabled: true} # scope: nist-csf
+  pcidss: {enabled: true} # scope: pci-dss
+  iso27001: {enabled: true} # scope: iso-27001
+  soc2: {enabled: true} # scope: soc2
+  hipaa: {enabled: true} # scope: hipaa
+  gdpr: {enabled: true} # scope: gdpr
+  owaspapi: {enabled: true} # scope: owasp-api
+  eucra: {enabled: true} # scope: eu-cra
+  nis2: {enabled: true} # scope: eu-nis2
   # Each framework gets a logo: an SVG that Rampart draws itself (the same mark the Rampart screens draw), kept in this repository's
   # logos/ folder and fetched by the Rampart server from logoBaseUrl. The repository has to be public. Set logos to false for a
   # cluster that cannot reach the internet, or logoBaseUrl to serve your own copies.

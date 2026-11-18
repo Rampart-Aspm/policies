@@ -1,0 +1,15 @@
+# Everything off: the chart renders nothing.
+riskPolicy: {enabled: false}
+slaPolicy: {enabled: false}
+compliance:
+  nist80053: {enabled: false}
+  nist800171: {enabled: false}
+  nistcsf: {enabled: false}
+  pcidss: {enabled: false}
+  iso27001: {enabled: false}
+  soc2: {enabled: false}
+  hipaa: {enabled: false}
+  gdpr: {enabled: false}
+  owaspapi: {enabled: false}
+  eucra: {enabled: false}
+  nis2: {enabled: false}

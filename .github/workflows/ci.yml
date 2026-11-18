@@ -33,10 +33,17 @@ jobs:
           helm lint --strict "$CHART"
           for f in "$CHART"/ci/*-values.yaml; do helm lint --strict "$CHART" -f "$f"; done
 
+      - name: The defaults render the whole policy set
+        run: |
+          # everything is on by default: 1 risk policy + 1 SLA policy + one resource for each framework in frameworks/
+          want=$(( 2 + $(ls frameworks/*.yaml | wc -l) ))
+          n="$(helm template t "$CHART" | grep -c '^kind:' || true)"
+          [[ "$n" == "$want" ]] || { echo "::error::the defaults must render $want resources, got $n"; exit 1; }
+
       - name: Everything off renders nothing
         run: |
-          n="$(helm template t "$CHART" | grep -c '^kind:' || true)"
-          [[ "$n" == "0" ]] || { echo "::error::the defaults must render nothing, got $n resources"; exit 1; }
+          n="$(helm template t "$CHART" -f "$CHART/ci/all-off-values.yaml" | grep -c '^kind:' || true)"
+          [[ "$n" == "0" ]] || { echo "::error::with everything off the chart must render nothing, got $n resources"; exit 1; }
 
       - name: Generated files are up to date
         run: |
