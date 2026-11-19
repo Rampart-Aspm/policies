@@ -64,7 +64,7 @@ source:
       slaPolicy: {enabled: true, profile: fedramp}
 ```
 
-The cluster needs the Rampart CRDs for the kinds above (they ship with the Rampart chart).
+The cluster needs the Rampart CRDs for the kinds above. They ship with the Rampart chart, and all of them are also in one file: `kubectl apply --server-side -f https://raw.githubusercontent.com/taha2samy-3/Rampart/main/deploy/rampart-crds.yaml` (one file per kind: [deploy/crds](https://github.com/taha2samy-3/Rampart/tree/main/deploy/crds)).
 
 ## Values
 
