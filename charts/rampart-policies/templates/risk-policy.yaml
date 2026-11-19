@@ -67,7 +67,7 @@ spec:
       group: context
       reason: "Application business criticality is rated High"
     - name: PRODUCTION_ENV
-      when: 'finding.track in ["production", "prod"]'
+      when: 'finding.track in ["production", "prod"] || app.environment == "production"'
       points: 60
       group: context
       reason: "Finding detected in production environment"

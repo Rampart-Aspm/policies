@@ -171,6 +171,8 @@ type scenarioFile struct {
 			InternetFacing       bool     `yaml:"internet_facing"`
 			DataClassification   []string `yaml:"data_classification"`
 			CompensatingControls []string `yaml:"compensating_controls"`
+			Type                 string   `yaml:"type"`
+			Environment          string   `yaml:"environment"`
 		} `yaml:"app"`
 	} `yaml:"scenarios"`
 }
@@ -227,7 +229,7 @@ func TestPolicySetScenarios(t *testing.T) {
 		in := risk.Input{
 			Finding: risk.FindingInput{Severity: sc.Finding.Severity, Category: sc.Finding.Category, Track: sc.Finding.Track, SecretVerified: sc.Finding.SecretVerified},
 			Vuln:    risk.VulnInput{ID: "CVE-0000-0000", KEV: sc.Vuln.KEV, EPSS: sc.Vuln.EPSS, Exploited: sc.Vuln.Exploited, ExploitMaturity: sc.Vuln.ExploitMaturity},
-			App:     risk.AppInput{Criticality: sc.App.Criticality, InternetFacing: sc.App.InternetFacing, DataClassification: sc.App.DataClassification, CompensatingControls: sc.App.CompensatingControls},
+			App:     risk.AppInput{Criticality: sc.App.Criticality, InternetFacing: sc.App.InternetFacing, DataClassification: sc.App.DataClassification, CompensatingControls: sc.App.CompensatingControls, Type: sc.App.Type, Environment: sc.App.Environment},
 		}
 		b := pol.Evaluate(in)
 		if len(b.Errors) > 0 {

@@ -87,3 +87,15 @@ scenarios:
     story: "Info findings weigh 10 and stay in the low band."
     finding: {severity: info, category: sast}
     app: {criticality: low}
+  - id: S16
+    title: "S04 in an application whose environment is production, found on main"
+    story: "The finding was found on main, so the branch rule gives nothing, but the application says it runs in production, and the production factor reads that. The score lands on the limit of the critical band, 800, as S05 does."
+    finding: {severity: high, category: sca, track: main}
+    vuln: {epss: 0.2}
+    app: {criticality: critical, internet_facing: true, data_classification: [pci], type: repo, environment: production}
+  - id: S17
+    title: "S16 in an application whose environment is development"
+    story: "The same finding in a development environment gets no environment points, so it stays high."
+    finding: {severity: high, category: sca, track: main}
+    vuln: {epss: 0.2}
+    app: {criticality: critical, internet_facing: true, data_classification: [pci], type: repo, environment: development}

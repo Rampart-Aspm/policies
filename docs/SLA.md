@@ -106,6 +106,8 @@ The same findings as in SCORING.md, with the deadline under each profile, and th
 | **S13** | medium, critical | 90 | 90 | 90 | 30 | 30 | 2026-04-01 09:00 UTC |
 | **S14** | high, medium | 30 | 30 | 30 | 30 | 30 | 2026-04-01 09:00 UTC |
 | **S15** | low, low | 180 | 180 | 180 | 365 | 180 | 2027-03-02 09:00 UTC |
+| **S16** | critical, critical | 15 | 30 | 30 | 3 | 3 | 2026-03-05 09:00 UTC |
+| **S17** | high, critical | 30 | 30 | 30 | 7 | 7 | 2026-03-09 09:00 UTC |
 <!-- /generated:sla-scenarios -->
 
 ## What is not modelled

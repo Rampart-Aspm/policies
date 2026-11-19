@@ -26,7 +26,7 @@ band  = critical if score >= 800;  high if >= 600;  medium if >= 300;  otherwise
 | `vuln.epss` | FIRST's EPSS scores, synchronised by the cluster feed |
 | `vuln.exploited` | exploitation in the wild reported by an optional source other than CISA (for example VulnCheck KEV or EUVD) |
 | `vuln.exploit_maturity` | `weaponized` when a Metasploit module or another configured source has a public exploit |
-| `app.criticality`, `internet_facing`, `data_classification`, `compensating_controls` | the `Application` resource |
+| `app.criticality`, `internet_facing`, `data_classification`, `compensating_controls`, `environment`, `type` | the `Application` resource (`environment` is empty when nobody said, and `type` is `repo` or empty) |
 
 If a feed is switched off, the factors that read it can never apply. The feed is part of the scoring.
 
@@ -45,7 +45,7 @@ If a feed is switched off, the factors that read it can never apply. The feed is
 | `SENSITIVE_DATA` | context | `app.data_classification.exists(d, d in ["pci", "pii", "phi"])` | +80 | Application handles sensitive data (PCI, PII, or PHI) |
 | `APP_CRITICAL` | context | `app.criticality == "critical"` | +100 | Application business criticality is rated Critical |
 | `APP_HIGH` | context | `app.criticality == "high"` | +50 | Application business criticality is rated High |
-| `PRODUCTION_ENV` | context | `finding.track in ["production", "prod"]` | +60 | Finding detected in production environment |
+| `PRODUCTION_ENV` | context | `finding.track in ["production", "prod"] || app.environment == "production"` | +60 | Finding detected in production environment |
 | `COMPENSATING_CONTROL` | reduction | `finding.category == "dast" && app.compensating_controls.exists(c, c in ["waf", "api_gateway"])` | -80 | The application is behind a web application firewall or an API gateway, which inspects the HTTP requests this finding needs |
 <!-- /generated:factors -->
 
@@ -62,7 +62,7 @@ If a feed is switched off, the factors that read it can never apply. The feed is
 | `INTERNET_FACING` | **Ours** | exposure is a decision point of CISA's [SSVC](https://cisa.gov/ssvc) and an environmental metric of CVSS; 100 is ours |
 | `SENSITIVE_DATA` | **Ours** | the data classes that PCI DSS (card data), HIPAA (health information) and the GDPR (personal data) are about; 80 is ours, and it applies once however many classes are listed |
 | `APP_CRITICAL`, `APP_HIGH` | **Ours** | business criticality is an input of the vulnerability-management products reviewed for this project; the points are ours |
-| `PRODUCTION_ENV` | **Ours** | read from the name of the branch (`production` or `prod`), because the application has no environment field yet ([FOUNDATION.md](FOUNDATION.md), item 6) |
+| `PRODUCTION_ENV` | **Ours** | applies when the finding was found on a branch named `production` or `prod`, **or** when the application's `environment` is `production` (an application is one branch and says where it runs, D140). An application that says nothing gets no points, so no score moved when this was added; the two do not add up |
 | `COMPENSATING_CONTROL` | **Ours** | PCI DSS 4.0.1 requirement 6.4.2 asks for a web application firewall (or an equivalent automated solution) in front of public web applications. It lowers only findings of a dynamic scan, because a request-inspecting control can stop what such a scan sends and cannot stop a flaw in a dependency |
 
 ## The bands
@@ -123,13 +123,15 @@ Each example is evaluated by Rampart's own scoring code with this policy. `first
 | **S13** | S12 without the WAF. The same finding with no control in front is 80 points higher. | 200 | `INTERNET_FACING` +100, `SENSITIVE_DATA` +80, `APP_CRITICAL` +100 | **480** | medium |
 | **S14** | A high finding reported as exploited by a source other than CISA. Exploitation reported elsewhere counts as much as a KEV listing (300), but only when the finding is not already on KEV. | 400 | `EXPLOITED_REPORTED` +300 | **700** | high |
 | **S15** | An informational finding. Info findings weigh 10 and stay in the low band. | 10 | none | **10** | low |
+| **S16** | S04 in an application whose environment is production, found on main. The finding was found on main, so the branch rule gives nothing, but the application says it runs in production, and the production factor reads that. The score lands on the limit of the critical band, 800, as S05 does. | 400 | `EPSS_MODERATE` +60, `INTERNET_FACING` +100, `SENSITIVE_DATA` +80, `APP_CRITICAL` +100, `PRODUCTION_ENV` +60 | **800** | critical |
+| **S17** | S16 in an application whose environment is development. The same finding in a development environment gets no environment points, so it stays high. | 400 | `EPSS_MODERATE` +60, `INTERNET_FACING` +100, `SENSITIVE_DATA` +80, `APP_CRITICAL` +100 | **740** | high |
 <!-- /generated:scenarios -->
 
 ## What the score does not include
 
 - **No CVSS vector or fix availability.** A policy cannot read them yet ([FOUNDATION.md](FOUNDATION.md), item 6).
 - **No reachability.** Whether the vulnerable code is called is not known.
-- **No environment on the application.** Production is read from the branch name.
+- **Environment is read only for production.** `staging`, `test` and `development` are values the application can have, and a policy can read them (`app.environment`), but the built-in policy gives them no points.
 - **No age.** A finding does not get worse with time in the score; time is the SLA's job.
 
 ## Reproducing a number
