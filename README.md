@@ -4,8 +4,6 @@ The scoring policies and the compliance frameworks of [Rampart](https://github.c
 
 **Everything is on by default.** A plain `helm install` gives every tenant the risk policy, the SLA policy (profile `strictest`) and the eleven compliance frameworks, as the cluster-wide default (scope `cluster`: a tenant that has a policy of its own keeps it). Each part is turned off with `enabled: false`. The chart is how that default policy set is versioned, pinned from Git and overridden, with a changelog to point at.
 
-**It needs a Rampart that has the application `environment` (schema version 51).** The risk policy reads `app.environment`; an older server refuses the policy and keeps its built-in one. Use `0.1.0`, whose risk policy does not read it, until the server is upgraded.
-
 ## What is in it
 
 | What | Kinds it creates | Choices | Explained in |

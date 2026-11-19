@@ -4,12 +4,11 @@ The version of this chart is the version of the policy set (README.md, "Versioni
 
 ## [0.2.0] - 2026-11-19
 
-**Everything is on by default.** The published 0.1.0 may predate part of what 0.1.0 lists below, so use 0.2.0.
+**Everything is on by default.**
 
 ### Changed
 - **The defaults are on.** A plain `helm install` gives every tenant the risk policy, the SLA policy (profile `strictest`) and all eleven compliance frameworks, as the cluster-wide default (scope `cluster`). Each part is turned off with `enabled: false`. This changes what an install does, which is why it is a new version and not an edit of 0.1.0.
-- The risk policy's `PRODUCTION_ENV` factor also applies when the application's `environment` is `production` (D140), as the built-in policy of a Rampart with schema version 51 does. **This needs that Rampart:** an older server refuses the policy (it does not know `app.environment`) and keeps its built-in one. Chart annotation `rampart.aspm.dev/needs-schema-version: "51"`.
-- Two worked examples that use the environment (S16, S17) in `docs/SCORING.md`.
+- CI: the defaults must render the whole policy set, and a new `ci/all-off-values.yaml` must render nothing.
 
 ## [0.1.0] - 2026-11-19
 

@@ -12,6 +12,4 @@ sources:
   - https://github.com/taha2samy-3/Rampart
 annotations:
   artifacthub.io/category: security
-  # the risk policy reads app.environment, which Rampart knows from schema version 51; an older server refuses the policy and keeps the built-in one
-  rampart.aspm.dev/needs-schema-version: "51"
   rampart.aspm.dev/needs-crds: "RiskPolicy ClusterRiskPolicy SLAPolicy ClusterSLAPolicy ComplianceFramework ClusterComplianceFramework"
